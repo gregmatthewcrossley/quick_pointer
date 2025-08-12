@@ -1,0 +1,106 @@
+<%= turbo_frame_tag "pointing_session" do %>
+<div class="bg-white rounded-lg shadow-lg p-4 sm:p-5">
+  <div class="mb-4">
+    <label for="jira-url" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Jira Ticket URL</label>
+    <div class="flex gap-2">
+      <%= text_field_tag :jira_url, session_data[:jira_url], 
+          class: "flex-1 px-2 sm:px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition",
+          placeholder: "Paste Jira URL...",
+          data: { turbo_frame: "pointing_session" } %>
+      <% 
+        url_with_protocol = session_data[:jira_url].to_s
+        if url_with_protocol.present? && !url_with_protocol.match?(/^https?:\/\//i)
+          url_with_protocol = "https://#{url_with_protocol}"
+        end
+      %>
+      <a href="<%= url_with_protocol %>" 
+         target="_blank" 
+         class="<%= session_data[:jira_url].present? ? '' : 'pointer-events-none opacity-50' %> inline-flex items-center justify-center px-2 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:bg-gray-100 active:scale-95 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Select Your Points</label>
+    <div class="grid grid-cols-6 gap-1 sm:gap-2">
+      <% [1, 2, 3, 5, 8, 13].each do |value| %>
+        <button data-vote-value="<%= value %>" 
+                class="vote-button <%= 'bg-blue-500 text-white border-blue-600' if user_vote == value %> <%= 'opacity-50 cursor-not-allowed' if session_data[:revealed] %> 
+                       px-2 py-2 text-sm sm:text-base font-semibold border-2 rounded-lg transition-all duration-200 
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                       active:scale-95
+                       <%= session_data[:revealed] ? '' : 'hover:scale-105 hover:shadow-md' %>
+                       <%= (user_vote != value && !session_data[:revealed]) ? 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 active:bg-gray-50' : '' %>
+                       <%= user_vote == value ? 'active:bg-blue-600' : '' %>"
+                <%= 'disabled' if session_data[:revealed] %>>
+          <%= value %>
+        </button>
+      <% end %>
+    </div>
+    <div class="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+      <p class="text-xs text-blue-900 font-medium mb-1">Think About:</p>
+      <ol class="text-xs text-blue-800 space-y-0.5">
+        <li>1. <strong>Complexity</strong> - How complex is the work?</li>
+        <li>2. <strong>Effort</strong> - How much effort will this work take?</li>
+        <li>3. <strong>Uncertainty</strong> - How much uncertainty or risk is there with this work?</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Votes</label>
+    <div class="min-h-[60px] p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+      <% if session_data[:revealed] && session_data[:votes].any? %>
+        <div class="flex flex-wrap gap-2">
+          <% session_data[:votes].values.sort.each_with_index do |vote, index| %>
+            <button data-highlight-value="<%= vote %>"
+                    class="vote-card <%= 'ring-2 ring-blue-500 ring-offset-1' if session_data[:highlighted_card] == vote %> 
+                           w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold text-lg 
+                           rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 
+                           flex items-center justify-center cursor-pointer
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
+                           active:scale-95 active:from-blue-600 active:to-indigo-700">
+              <%= vote %>
+            </button>
+          <% end %>
+        </div>
+      <% elsif !session_data[:revealed] && session_data[:votes].any? %>
+        <div class="flex flex-wrap gap-2">
+          <% session_data[:votes].count.times do |index| %>
+            <div class="w-12 h-12 rounded-lg shadow-md relative overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 transform hover:scale-105 transition-transform duration-200">
+              <div class="absolute inset-0 opacity-20">
+                <svg class="w-full h-full" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                  <pattern id="card-pattern-<%= index %>" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <circle cx="1" cy="1" r="0.5" fill="white" opacity="0.3"/>
+                    <circle cx="6" cy="6" r="0.5" fill="white" opacity="0.3"/>
+                  </pattern>
+                  <rect width="40" height="40" fill="url(#card-pattern-<%= index %>)" />
+                </svg>
+              </div>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-white text-xl font-bold opacity-30">?</span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center text-gray-400 text-sm">No votes yet</div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="flex gap-2 justify-center">
+    <% if !session_data[:revealed] %>
+      <button class="reveal-button px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg shadow hover:shadow-md transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 active:scale-95 active:bg-green-700">
+        Reveal
+      </button>
+    <% end %>
+    <button class="clear-button px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg shadow hover:shadow-md transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 active:scale-95 active:bg-red-700">
+      Clear
+    </button>
+  </div>
+</div>
+<% end %>

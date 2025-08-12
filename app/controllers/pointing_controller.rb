@@ -3,6 +3,7 @@ class PointingController < ApplicationController
     @session_data = get_session_data
     @user_id = ensure_user_id
     @user_vote = @session_data[:votes][@user_id]
+    @presence_count = Rails.cache.read("presence_count") || 0
   end
 
   def update_url
@@ -65,8 +66,17 @@ class PointingController < ApplicationController
   end
 
   def broadcast_update
+    session_data = get_session_data
+    user_vote = session_data[:votes][ensure_user_id]
+    
+    # Broadcast via ActionCable to all connected users
+    ActionCable.server.broadcast("pointing_channel", {
+      type: "session_update",
+      html: render_to_string(partial: "pointing/session", formats: [:html], locals: { session_data: session_data, user_vote: user_vote })
+    })
+    
     respond_to do |format|
-      format.turbo_stream
+      format.turbo_stream { render turbo_stream: turbo_stream.replace("pointing_session", partial: "pointing/session", locals: { session_data: session_data, user_vote: user_vote }) }
       format.html { redirect_to root_path }
     end
   end
