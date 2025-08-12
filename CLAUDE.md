@@ -18,7 +18,7 @@ A real-time collaborative scrum story pointing application built with Rails and 
 - Opens link in new tab
 
 ### 3. Voting System
-- Fibonacci buttons: 1, 2, 3, 5, 8, 13, 21, 34
+- Fibonacci buttons: 1, 2, 3, 5, 8, 13
 - Each user gets one vote (tracked by session)
 - Clicking a button records vote (replacing previous if exists)
 - Visual feedback on button selection:
@@ -51,13 +51,12 @@ A real-time collaborative scrum story pointing application built with Rails and 
 
 ## Technical Implementation
 
-### Models
-- **PointingSession**: Singleton model to maintain state
-  - jira_url (string)
-  - votes (json) - stores anonymous votes
-  - revealed (boolean)
-  - highlighted_card (integer) - which vote value is highlighted
-  - created_at/updated_at
+### Storage
+- **No Database**: Uses Rails' in-memory cache instead of persistent database
+- **Cache-based Session Storage**: All session data stored temporarily in Rails cache
+  - Expires after 24 hours
+  - No permanent persistence needed
+  - Perfect for ephemeral pointing sessions
 
 ### Controllers
 - **PointingController**
@@ -103,15 +102,14 @@ A real-time collaborative scrum story pointing application built with Rails and 
    - Responsive layout
    - Accessible color contrast
 
-### Database Schema
+### Cache Data Structure
 ```ruby
-create_table :pointing_sessions do |t|
-  t.string :jira_url
-  t.json :votes, default: {}
-  t.boolean :revealed, default: false
-  t.integer :highlighted_card
-  t.timestamps
-end
+{
+  jira_url: "",
+  votes: {}, # Hash of user_id => vote_value
+  revealed: false,
+  highlighted_card: nil
+}
 ```
 
 ### Routes
@@ -125,8 +123,8 @@ post 'highlight', to: 'pointing#highlight'
 ```
 
 ## Development Steps
-1. Set up database and model
-2. Create controller and routes
+1. Create controller with cache-based storage
+2. Set up routes
 3. Build main view with Turbo Frame
 4. Implement ActionCable presence
 5. Add Turbo Stream broadcasting
