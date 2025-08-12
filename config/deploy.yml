@@ -2,34 +2,31 @@
 service: quick_pointer
 
 # Name of the container image.
-image: your-user/quick_pointer
+image: dinnerbell/quick-pointer
 
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
-  # job:
-  #   hosts:
-  #     - 192.168.0.1
-  #   cmd: bin/jobs
+    - 178.156.207.173
 
 # Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
 # Remove this section when using multiple web servers and ensure you terminate SSL at your load balancer.
 #
 # Note: If using Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
+# Let's Encrypt SSL with your subdomain
 proxy:
   ssl: true
-  host: app.example.com
+  host: quickpointer.dinnerbell.design
 
 # Credentials for your image host.
 registry:
   # Specify the registry server, if you're not using Docker Hub
   # server: registry.digitalocean.com / ghcr.io / ...
-  username: your-user
+  username: dinnerbell
 
   # Always use an access token rather than real password when possible.
   password:
-    - KAMAL_REGISTRY_PASSWORD
+    - DOCKER_REGISTRY_PAT
 
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
@@ -76,6 +73,7 @@ asset_path: /rails/public/assets
 # Configure the image builder.
 builder:
   arch: amd64
+  remote: ssh://root@178.156.207.173:5832
 
   # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
   # remote: ssh://docker@docker-builder-server
@@ -88,7 +86,8 @@ builder:
   #   - RAILS_MASTER_KEY
 
 # Use a different ssh user than root
-# ssh:
+ssh:
+  port: 5832
 #   user: app
 
 # Use accessory services (secrets come from .kamal/secrets).
