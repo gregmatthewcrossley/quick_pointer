@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   root "pointing#index"
   post "update_url", to: "pointing#update_url"
   post "vote", to: "pointing#vote"
+  post "remove_vote", to: "pointing#remove_vote"
   post "reveal", to: "pointing#reveal"
   post "clear", to: "pointing#clear"
   post "highlight", to: "pointing#highlight"

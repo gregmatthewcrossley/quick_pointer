@@ -16,7 +16,16 @@ class PointingController < ApplicationController
   def vote
     session_data = get_session_data
     session_data[:votes] ||= {}
-    session_data[:votes][ensure_user_id] = params[:value].to_i
+    # Handle abstain as string, numbers as integers
+    session_data[:votes][ensure_user_id] = params[:value] == 'abstain' ? 'abstain' : params[:value].to_i
+    save_session_data(session_data)
+    broadcast_update
+  end
+
+  def remove_vote
+    session_data = get_session_data
+    session_data[:votes] ||= {}
+    session_data[:votes].delete(ensure_user_id)
     save_session_data(session_data)
     broadcast_update
   end
@@ -35,7 +44,8 @@ class PointingController < ApplicationController
 
   def highlight
     session_data = get_session_data
-    session_data[:highlighted_card] = params[:value].to_i
+    # Handle abstain as string, numbers as integers
+    session_data[:highlighted_card] = params[:value] == 'abstain' ? 'abstain' : params[:value].to_i
     save_session_data(session_data)
     broadcast_update
   end
@@ -69,10 +79,10 @@ class PointingController < ApplicationController
     session_data = get_session_data
     user_vote = session_data[:votes][ensure_user_id]
     
-    # Broadcast via ActionCable to all connected users
+    # Broadcast via ActionCable to all connected users (without user-specific vote state)
     ActionCable.server.broadcast("pointing_channel", {
       type: "session_update",
-      html: render_to_string(partial: "pointing/session", formats: [:html], locals: { session_data: session_data, user_vote: user_vote })
+      html: render_to_string(partial: "pointing/session", formats: [:html], locals: { session_data: session_data, user_vote: nil })
     })
     
     respond_to do |format|
